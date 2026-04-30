@@ -1,0 +1,29 @@
+{
+  "name": "xebia-1",
+  "version": "1.0.0",
+  "description": "Cypress UI and API automation — Xebia challenge",
+  "private": true,
+  "scripts": {
+    "cy:open": "cross-env ELECTRON_RUN_AS_NODE= cypress open",
+    "cy:run": "cross-env ELECTRON_RUN_AS_NODE= cypress run",
+    "cy:run:chrome": "cross-env ELECTRON_RUN_AS_NODE= cypress run --browser chrome",
+    "cy:run:firefox": "cross-env ELECTRON_RUN_AS_NODE= cypress run --browser firefox",
+    "cy:run:e2e": "cross-env ELECTRON_RUN_AS_NODE= cypress run --spec 'cypress/e2e/**/*.cy.ts'",
+    "cy:run:api": "cross-env ELECTRON_RUN_AS_NODE= cypress run --spec 'cypress/api/**/*.cy.ts'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "cross-env": "^7.0.3",
+    "cypress": "^13.17.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-cypress": "^3.6.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3"
+  }
+}

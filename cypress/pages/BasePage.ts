@@ -1,33 +1,34 @@
-/**
- * All Page Object classes extend BasePage.
- * POM classes should expose chainable methods but must NOT contain assertions —
- * keep assertions in the spec file.
- *
- * Usage:
- *   export class LoginPage extends BasePage {
- *     readonly url = "/login";
- *     get usernameInput() { return this.getByTestId("username-input"); }
- *   }
- */
-export abstract class BasePage {
+import type { Locator, Language } from "../types";
+
+const DEFAULT_LANGUAGE: Language = "EN";
+
+export abstract class BasePage<T extends Record<string, Locator>> {
+  protected language: Language = DEFAULT_LANGUAGE;
+
+  constructor(protected readonly locators: T) {}
+
   abstract readonly url: string;
+
+  setLanguage(lang: Language): this {
+    this.language = lang;
+    return this;
+  }
+
+  locate(key: keyof T & string): Cypress.Chainable<JQuery<HTMLElement>> {
+    const locator = this.locators[key];
+    const opts = locator.shadowDom ? { includeShadowDom: true } : {};
+
+    if (locator.dataTestId) {
+      return cy.get(`[data-testid="${locator.dataTestId}"]`, opts);
+    }
+
+    const name = locator.accessibleNames[this.language];
+    return cy.contains(`[role="${locator.role}"]`, name, opts);
+  }
 
   visit(queryString = ""): this {
     cy.visit(`${this.url}${queryString}`);
     return this;
-  }
-
-  /** Preferred selector strategy — avoids coupling tests to CSS classes or DOM structure. */
-  getByTestId(testId: string): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy.get(`[data-testid="${testId}"]`);
-  }
-
-  /** Fallback selector when data-testid attributes are not available. */
-  getByLabel(labelText: string): Cypress.Chainable<JQuery<HTMLElement>> {
-    return cy
-      .contains("label", labelText)
-      .invoke("attr", "for")
-      .then((id) => cy.get(`#${id}`));
   }
 
   waitForPageLoad(): this {

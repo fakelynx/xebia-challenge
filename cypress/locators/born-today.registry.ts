@@ -1,0 +1,77 @@
+import type { Locator } from "../types";
+
+export const BornTodayLocators = {
+  filterChip: {
+    xpath: "//div[@data-testid='born-today-applied-chip']",
+    role: "group",
+    accessibleNames: { ES: "Filtro aplicado", EN: "Applied filter" },
+    dataTestId: "born-today-applied-chip",
+    description: "Applied filter chip",
+  },
+  filterChipRemove: {
+    xpath: "//button[@aria-label='Remove']",
+    role: "button",
+    accessibleNames: { ES: "Eliminar filtro", EN: "Remove filter" },
+    textContent: { ES: "Eliminar filtro", EN: "Remove filter" },
+    description: "Remove button on applied chip",
+  },
+  fromDayInput: {
+    xpath: "//input[@data-testid='born-today-from-day']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Día desde", EN: "From day" },
+    dataTestId: "born-today-from-day",
+    description: "From date day input",
+  },
+  fromMonthInput: {
+    xpath: "//input[@data-testid='born-today-from-month']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Mes desde", EN: "From month" },
+    dataTestId: "born-today-from-month",
+    description: "From date month input",
+  },
+  fromYearInput: {
+    xpath: "//input[@data-testid='born-today-from-year']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Año desde", EN: "From year" },
+    dataTestId: "born-today-from-year",
+    description: "From date year input",
+  },
+  toDayInput: {
+    xpath: "//input[@data-testid='born-today-to-day']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Día hasta", EN: "To day" },
+    dataTestId: "born-today-to-day",
+    description: "To date day input",
+  },
+  toMonthInput: {
+    xpath: "//input[@data-testid='born-today-to-month']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Mes hasta", EN: "To month" },
+    dataTestId: "born-today-to-month",
+    description: "To date month input",
+  },
+  toYearInput: {
+    xpath: "//input[@data-testid='born-today-to-year']",
+    role: "spinbutton",
+    accessibleNames: { ES: "Año hasta", EN: "To year" },
+    dataTestId: "born-today-to-year",
+    description: "To date year input",
+  },
+  applyButton: {
+    xpath: "//button[@data-testid='born-today-apply']",
+    role: "button",
+    accessibleNames: { ES: "Aplicar", EN: "Apply" },
+    textContent: { ES: "Aplicar", EN: "Apply" },
+    dataTestId: "born-today-apply",
+    description: "Apply date filter button",
+  },
+  celebrityList: {
+    xpath: "//ul[@data-testid='born-today-results']",
+    role: "list",
+    accessibleNames: { ES: "Resultados", EN: "Results" },
+    dataTestId: "born-today-results",
+    description: "Celebrity results list",
+  },
+} satisfies Record<string, Locator>;
+
+export type BornTodayLocatorMap = typeof BornTodayLocators;

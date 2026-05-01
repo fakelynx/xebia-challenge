@@ -4,7 +4,9 @@ export type Language = (typeof Languages)[number];
 export interface Locator {
   xpath: string;
   role: string;
-  accessibleNames: Record<Language, string>;
+  accessibleNames?: Record<Language, string>;
+  textContent?: Record<Language, string>;
+  cssSelector?: string;
   dataTestId?: string;
   description?: string;
   shadowDom?: boolean;

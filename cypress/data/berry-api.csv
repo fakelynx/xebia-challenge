@@ -1,0 +1,7 @@
+name,value
+baseUrl,https://pokeapi.co/api/v2
+validBerryId,1
+invalidBerryId,99999
+validBerryName,cheri
+invalidBerryName,notaberry-xyz
+validFlavorName,spicy

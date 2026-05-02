@@ -4,12 +4,12 @@
   "description": "Cypress UI and API automation — Xebia challenge",
   "private": true,
   "scripts": {
-    "cy:open": "cross-env ELECTRON_RUN_AS_NODE= cypress open",
-    "cy:run": "cross-env ELECTRON_RUN_AS_NODE= cypress run",
-    "cy:run:chrome": "cross-env ELECTRON_RUN_AS_NODE= cypress run --browser chrome",
-    "cy:run:firefox": "cross-env ELECTRON_RUN_AS_NODE= cypress run --browser firefox",
-    "cy:run:e2e": "cross-env ELECTRON_RUN_AS_NODE= cypress run --spec 'cypress/e2e/**/*.cy.ts'",
-    "cy:run:api": "cross-env ELECTRON_RUN_AS_NODE= cypress run --spec 'cypress/api/**/*.cy.ts'",
+    "cy:open": "node scripts/cypress-runner.js open",
+    "cy:run": "node scripts/cypress-runner.js run",
+    "cy:run:chrome": "node scripts/cypress-runner.js run --browser chrome",
+    "cy:run:firefox": "node scripts/cypress-runner.js run --browser firefox",
+    "cy:run:e2e": "node scripts/cypress-runner.js run --spec 'cypress/e2e/**/*.cy.ts'",
+    "cy:run:api": "node scripts/cypress-runner.js run --spec 'cypress/api/**/*.cy.ts'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."
@@ -24,6 +24,7 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-cypress": "^3.6.0",
     "prettier": "^3.8.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "zod": "^4.4.2"
   }
 }

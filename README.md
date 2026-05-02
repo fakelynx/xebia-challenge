@@ -59,12 +59,28 @@ Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor
 
 When element identity depends on a runtime value, use `this.locateOverriding(key, overrides)`. The `LocateOverrides` object supports four independent fields: `ariaLabel` (substitutes into the aria-label strategy), `textContent` (substitutes into the role+text strategy), `xpathIndex` (selects the nth XPath match, disabling all other strategies), and `alias` (registers a Cypress alias via `.as()` for reuse within the test).
 
+## API Tests (Part 2)
+
+API specs live in `cypress/api/` and target the [PokéAPI](https://pokeapi.co/). They use `cy.request()` with absolute URLs and validate response shapes with **Zod schemas** — one `.parse()` call replaces per-field assertions and gives precise field-level error messages on failure.
+
+| Scenario | Endpoint |
+|----------|----------|
+| Valid berry by numeric id → 200 + shape check | `GET /api/v2/berry/{id}` |
+| Invalid berry id → 404 | `GET /api/v2/berry/{id}` |
+| Valid berry by name → 200 + shape check | `GET /api/v2/berry/{name}` |
+| Invalid berry name → 404 | `GET /api/v2/berry/{name}` |
+| Valid berry-flavor by name → 200 + shape check | `GET /api/v2/berry-flavor/{name}` |
+| Spicy berry with highest potency → cross-validate response | `GET /api/v2/berry-flavor/spicy` → `GET /api/v2/berry/{name}` |
+
+Test data lives in `cypress/data/berry-api.csv`. The PokéAPI base URL is stored there — no `baseUrl` config change needed to run API tests.
+
 ## Tech Stack
 
-| Tool       | Version | Purpose           |
-|------------|---------|-------------------|
-| Node.js    | 18.x    | Runtime           |
-| TypeScript | latest  | Language          |
-| Cypress    | 13.x    | Test runner       |
-| ESLint     | 8.x     | Linting           |
-| Prettier   | 3.x     | Formatting        |
+| Tool       | Version | Purpose                        |
+|------------|---------|--------------------------------|
+| Node.js    | 18.x    | Runtime                        |
+| TypeScript | latest  | Language                       |
+| Cypress    | 13.x    | Test runner                    |
+| Zod        | latest  | API response schema validation |
+| ESLint     | 8.x     | Linting                        |
+| Prettier   | 3.x     | Formatting                     |

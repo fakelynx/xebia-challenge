@@ -6,8 +6,8 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "resolveJsonModule": true,
-    "outDir": "dist",
     "types": ["node", "cypress"]
   },
   "include": ["cypress.config.ts", "cypress/**/*.ts"],

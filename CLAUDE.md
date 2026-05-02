@@ -24,17 +24,19 @@ Both suites share the same `e2e` Cypress configuration block. No Component Testi
 ```
 xebia-1/
 ├── cypress/
-│   ├── api/              # Part 2: API spec files (*.cy.ts)
-│   ├── data/             # Test data CSV files (one per feature)
-│   ├── e2e/              # Part 1: UI spec files (*.cy.ts)
-│   ├── locators/         # Element locator CSV files (one per page)
-│   ├── pages/            # Page Object Model classes
-│   │   └── BasePage.ts   # Abstract base — all POMs extend this
+│   ├── api/                  # Part 2: API spec files (*.cy.ts)
+│   ├── data/                 # Test data CSV files (one per feature)
+│   ├── e2e/                  # Part 1: UI spec files (*.cy.ts)
+│   ├── locators/             # TypeScript locator registries (*.registry.ts, one per page)
+│   ├── pages/                # Page Object Model classes
+│   │   ├── BaseComponent.ts  # locate() pipeline + strategy methods
+│   │   └── BasePage.ts       # Abstract base — all POMs extend this
 │   ├── support/
-│   │   ├── commands.ts   # Custom Cypress commands + type declarations
-│   │   └── e2e.ts        # Support file loaded before every spec
+│   │   ├── commands.ts       # Custom Cypress commands + type declarations
+│   │   ├── csv.ts            # parseData() helper for test data CSVs
+│   │   └── e2e.ts            # Support file loaded before every spec
 │   ├── types/
-│   │   └── index.ts      # Shared types: Locator, Language, etc.
+│   │   └── index.ts          # Shared types: Locator, Language, TestData
 │   └── tsconfig.json
 ├── cypress.config.ts
 ├── tsconfig.json
@@ -73,9 +75,9 @@ npm run format             # Format all files with Prettier
 - All files in `cypress/` are TypeScript (`.ts`). No `.js` files.
 - Never use `cy.wait(<number>)` — use `cy.wait("@alias")` or assertion-based waiting.
 - Write test descriptions in a Gherkin-inspired style so they read naturally as scenarios.
-- Element locators live in CSV files under `cypress/locators/` — one file per page.
+- Element locators live in TypeScript registry files under `cypress/locators/` — one per page.
 - Test data lives in CSV files under `cypress/data/` — one file per feature.
-- POMs are type-safe: locators and data must satisfy the interfaces defined in `cypress/types/`.
+- POMs are type-safe: locator maps come from the registry file for that page.
 
 ---
 
@@ -87,43 +89,59 @@ type Language = (typeof Languages)[number];
 
 interface Locator {
   xpath: string;
-  role: string; // ARIA role (e.g. "button", "textbox")
-  accessibleNames: Record<Language, string>;
-  dataTestId?: string; // takes priority over accessibleNames when present
-  description?: string; // for reporting purposes
-  shadowDom?: boolean; // true when the element is inside a Shadow DOM
-  iframe?: Locator; // locator of the frame that contains this element
+  role: string;
+  accessibleNames?: Record<Language, string>; // ARIA computed name — used for aria-label strategy
+  textContent?: Record<Language, string>;      // Visible text inside the element — used for role+text strategy
+  cssSelector?: string;                        // CSS selector — used as last-resort strategy
+  dataTestId?: string;
+  description?: string;
+  shadowDom?: boolean;
+  iframe?: Locator;
 }
 
 type TestData = Record<string, string>;
 ```
 
+`accessibleNames` and `textContent` are kept separate because they describe different things: a button may have `aria-label="Close dialog"` with no visible text, or a link may display "Learn more" while its ARIA name is "Learn more about pricing".
+
 ---
 
-### Locator CSV files (`cypress/locators/`)
+### Locator registries (`cypress/locators/*.registry.ts`)
 
-One CSV per page. Each row defines one element. Parsed into `Record<string, Locator>`.
+One `.registry.ts` file per page. Each file exports a typed constant using `satisfies Record<string, Locator>` — this validates the shape without widening the type, so key names and per-field types are preserved for autocomplete and type-safe `keyof` access in the POM.
 
-| Column              | Required | Notes                                     |
-| ------------------- | -------- | ----------------------------------------- |
-| `name`              | yes      | Key used to reference the locator in code |
-| `xpath`             | yes      | Full XPath expression                     |
-| `role`              | yes      | ARIA role string                          |
-| `accessibleNameES`  | yes      | Accessible name in Spanish                |
-| `accessibleNameEN`  | yes      | Accessible name in English                |
-| `dataTestId`        | no       | When present, used with highest priority  |
-| `description`       | no       | Human-readable label for reports          |
-| `shadowDom`         | no       | `true` / `false`                          |
-| `iframe`            | no       | Name of another locator row for the frame |
+```typescript
+// cypress/locators/login.registry.ts
+import type { Locator } from "../types";
 
-Example — `cypress/locators/login.csv`:
+export const LoginLocators = {
+  usernameInput: {
+    xpath: "//input[@name='username']",
+    role: "textbox",
+    accessibleNames: { ES: "Usuario", EN: "Username" },
+    dataTestId: "username-input",
+    description: "Username field",
+  },
+  passwordInput: {
+    xpath: "//input[@name='password']",
+    role: "textbox",
+    accessibleNames: { ES: "Contraseña", EN: "Password" },
+    dataTestId: "password-input",
+    description: "Password field",
+  },
+  submitButton: {
+    xpath: "//button[@type='submit']",
+    role: "button",
+    accessibleNames: { ES: "Iniciar sesión", EN: "Login" },
+    textContent: { ES: "Iniciar sesión", EN: "Login" },
+    description: "Submit button",
+  },
+} satisfies Record<string, Locator>;
 
-```csv
-name,xpath,role,accessibleNameES,accessibleNameEN,data-test-id,description
-usernameInput,//input[@name='username'],textbox,Usuario,Username,username-input,Username field
-passwordInput,//input[@name='password'],textbox,Contraseña,Password,password-input,Password field
-submitButton,//button[@type='submit'],button,Iniciar sesión,Login,,Submit button
+export type LoginLocatorMap = typeof LoginLocators;
 ```
+
+Populate only the fields that are available on the element. The more fields provided, the more strategies the `locate()` pipeline can try. Provide `dataTestId` whenever the element has a `data-testid` attribute — it is the most reliable strategy.
 
 ---
 
@@ -148,16 +166,19 @@ password,Test@1234
 - API specs: `cypress/api/`
 - One top-level `describe` block per file, named after the feature
 - `it()` descriptions follow Gherkin style: _"given [context], when [action], then [outcome]"_
+- Import the registry directly — no async setup, no `before()` hook needed for locators
 
 ```typescript
 // cypress/e2e/login.cy.ts
 import { LoginPage } from "../pages/LoginPage";
-import { parseLocators, parseData } from "../support/csv";
+import { LoginLocators } from "../locators/login.registry";
+import { parseData } from "../support/csv";
 
 describe("Login", () => {
-  const locators = parseLocators("login");
-  const data = parseData("login");
-  const page = new LoginPage(locators);
+  const page = new LoginPage(LoginLocators);
+
+  let data: Record<string, string>;
+  before(() => { parseData("login").then((d) => { data = d; }); });
 
   it("given a user with valid credentials, when they log in, then they are redirected to the dashboard", () => {
     page.visit().login(data.username, data.password).assertOnPage();
@@ -166,7 +187,7 @@ describe("Login", () => {
 
   it("given a user with an invalid password, when they attempt to log in, then an error message is shown", () => {
     page.visit().login(data.username, "wrong-password");
-    cy.contains(locators.errorMessage.accessibleNames["EN"]).should("be.visible");
+    cy.contains(LoginLocators.errorMessage.accessibleNames!["EN"]).should("be.visible");
   });
 });
 ```
@@ -175,31 +196,22 @@ describe("Login", () => {
 
 ### Page Object Model
 
-All POM classes extend `BasePage` from [cypress/pages/BasePage.ts](cypress/pages/BasePage.ts).
+All POM classes extend `BasePage` from [cypress/pages/BasePage.ts](cypress/pages/BasePage.ts), which itself extends `BaseComponent` from [cypress/pages/BaseComponent.ts](cypress/pages/BaseComponent.ts).
 
 - One file per page or significant component
-- Constructor receives a typed locator map (`Record<string, Locator>`)
+- No inline locator interfaces — import the `*LocatorMap` type from the registry file
+- Constructor receives the registry export directly (synchronous, no `cy.task`)
 - Methods return `this` for fluent chaining
 - POM classes expose actions — assertions stay in the spec file
-- `BasePage.locate()` applies the locator priority order:
-  1. `data-test-id` → `cy.get('[data-testid="..."]')`
-  2. Accessible name in current language → role-based or text selector
-  3. XPath → `cy.xpath()`
 
 ```typescript
 // cypress/pages/LoginPage.ts
 import { BasePage } from "./BasePage";
-import type { Locator } from "../types";
+import type { LoginLocatorMap } from "../locators/login.registry";
 
-interface LoginLocators {
-  usernameInput: Locator;
-  passwordInput: Locator;
-  submitButton: Locator;
-  errorMessage: Locator;
-}
-
-export class LoginPage extends BasePage<LoginLocators> {
+export class LoginPage extends BasePage<LoginLocatorMap> {
   readonly url = "/login";
+  readonly pageTitle = "Sign in";
 
   login(username: string, password: string): this {
     this.locate("usernameInput").type(username);
@@ -209,6 +221,36 @@ export class LoginPage extends BasePage<LoginLocators> {
   }
 }
 ```
+
+#### `locate(key)` — multi-strategy pipeline
+
+Defined in `BaseComponent`, `locate()` runs all applicable strategies against the AUT's DOM in parallel (via `promiseAny`) and uses the first one to find elements. The winning strategy is reported in the Cypress log.
+
+**Strategy priority** (first with available locator data wins):
+
+| # | Strategy | Field used | Selector built |
+|---|----------|------------|----------------|
+| 1 | `data-testid` | `dataTestId` | `[data-testid="..."]` |
+| 2 | `aria-label` | `accessibleNames[language]` | `[aria-label="..."]` |
+| 3 | `role + text` | `role` + `textContent[language]` | `[role="..."]:contains("...")` |
+| 4 | XPath | `xpath` | evaluated via `document.evaluate()` against the AUT |
+| 5 | CSS selector | `cssSelector` | passed directly to `Cypress.$()` |
+
+All strategies use `Cypress.$()` (jQuery querying the AUT's DOM) for the synchronous DOM check. `locate()` returns a `Cypress.Chainable<JQuery<HTMLElement>>` — chain Cypress commands on it normally.
+
+**`locateOverriding(key, text)`** — same pipeline, but substitutes `text` into both `accessibleNames` and `textContent` for that call. Use when the element identity depends on a runtime string rather than a fixed registry value:
+
+```typescript
+// Find the accordion toggle whose visible text is sectionName (e.g. "Actor", "Director")
+this.locateOverriding("accordionToggle", sectionName).click();
+```
+
+#### Acceptable non-registry selectors in POM methods
+
+Two categories of selector are intentionally kept inline rather than in the registry:
+
+- **ARIA state** (`[aria-expanded="true"]`, `[aria-selected]`) — runtime DOM state, not element identity
+- **Generic structural tags** (`"img"` inside a grid, `"a[href*='/name/']"` inside a list) — describe DOM structure when scoped to a `locate()`-resolved parent
 
 ---
 

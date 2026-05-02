@@ -16,6 +16,7 @@ Both suites share the same `e2e` Cypress configuration block. No Component Testi
 | Node.js    | 18.x    | Runtime                |
 | TypeScript | latest  | Language               |
 | Cypress    | 13.x    | Test runner (UI + API) |
+| Zod        | latest  | API response schema validation |
 | ESLint     | 8.x     | Linting                |
 | Prettier   | 3.x     | Formatting             |
 
@@ -277,15 +278,43 @@ Two categories of selector are intentionally kept inline rather than in the regi
 
 ### API Tests
 
+API specs live in `cypress/api/`. They use `cy.request()` with full absolute URLs (no `baseUrl` dependency), and validate response shapes with **Zod schemas** instead of individual `expect` chains.
+
+Define schemas at the top of the spec file, derive TypeScript types via `z.infer<>`, and call `.parse()` on the response body — a single call replaces the wall of per-field assertions and gives precise field-level error messages on failure.
+
 ```typescript
-// cypress/api/users.cy.ts
-describe("Users API", () => {
-  it("given the users endpoint is available, when a GET request is made, then it returns 200 with an array", () => {
-    cy.request("GET", "/api/users").then((response) => {
+// cypress/api/berry.cy.ts
+import { z } from "zod";
+import type { TestData } from "../types";
+import { parseData } from "../support/csv";
+
+const BerrySchema = z.object({
+  id: z.number().positive(),
+  name: z.string().min(1),
+  flavors: z.array(z.object({ potency: z.number(), flavor: z.object({ name: z.string(), url: z.string() }) })),
+  // ... remaining fields
+});
+type BerryResponse = z.infer<typeof BerrySchema>;
+
+describe("PokéAPI Berry API", () => {
+  let data: TestData;
+  before(() => { parseData("berry-api").then((d) => { data = d; }); });
+
+  it("given the berry endpoint, when requesting a berry by valid name, then it returns 200 with a well-formed berry object", () => {
+    cy.request<BerryResponse>({ method: "GET", url: `${data.baseUrl}/berry/${data.validBerryName}` }).then((response) => {
       expect(response.status).to.eq(200);
-      expect(response.body).to.be.an("array");
+      const berry = BerrySchema.parse(response.body);
+      expect(berry.name).to.eq(data.validBerryName);
     });
   });
+});
+```
+
+For error cases, always pass `failOnStatusCode: false` so Cypress does not throw before the assertion runs:
+
+```typescript
+cy.request({ url: "...", failOnStatusCode: false }).then((response) => {
+  expect(response.status).to.eq(404);
 });
 ```
 

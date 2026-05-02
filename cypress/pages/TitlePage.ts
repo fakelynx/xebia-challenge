@@ -11,7 +11,8 @@ export class TitlePage extends BasePage<TitleLocatorMap> {
   }
 
   rate(stars: number): this {
-    this.locateOverriding("ratingStarButton", { xpathIndex: stars }).click();
+    this.locate("ratingButton").click();
+    this.locateOverriding("ratingStarButton", { ariaLabel: `Rate ${stars}` }).click();
     return this;
   }
 

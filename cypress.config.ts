@@ -28,7 +28,17 @@ export default defineConfig({
     viewportHeight: 720,
     video: false,
     screenshotOnRunFailure: true,
+    experimentalModifyObstructiveThirdPartyCode: true,
     setupNodeEvents(on) {
+      on("before:browser:launch", (browser, launchOptions) => {
+        if (browser.family === "chromium") {
+          launchOptions.args = (launchOptions.args as string[]).filter(
+            (arg) => arg !== "--enable-automation"
+          );
+          launchOptions.args.push("--disable-blink-features=AutomationControlled");
+        }
+        return launchOptions;
+      });
       on("task", {
         parseData(name: string) {
           const file = path.join(__dirname, "cypress", "data", `${name}.csv`);

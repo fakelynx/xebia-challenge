@@ -27,11 +27,11 @@ export const ActorLocators = {
     description: "Expanded accordion content panel",
   },
   upcomingAccordionToggle: {
-    xpath: "//button[@data-testid='nm-flmg-accordion-header-button'][.//span[contains(text(),'Upcoming')]]",
+    xpath: "//label[starts-with(@data-testid,'accordion-item') and substring(@data-testid,string-length(@data-testid)-7)='-Upcoming']",
     role: "button",
-    textContent: { ES: "Próximamente", EN: "Upcoming" },
-    cssSelector: "button[data-testid='nm-flmg-accordion-header-button']",
-    description: "Upcoming filmography accordion toggle — textContent distinguishes from other section toggles",
+    accessibleNames: { ES: "Expandir Próximamente", EN: "Expand Upcoming" },
+    cssSelector: "[data-testid^='accordion-item'][data-testid$='-Upcoming']",
+    description: "Upcoming filmography accordion toggle — dynamic data-testid matched by prefix/suffix",
   },
   unreleasedTitleElem: {
     xpath: "//li[contains(@class,'ipc-metadata-list-summary-item')]",

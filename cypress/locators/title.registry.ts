@@ -10,13 +10,10 @@ export const TitleLocators = {
     description: "Section tab navigation bar",
   },
   photosLink: {
-    xpath: "//a[@data-testid='hero-title-block__media-index']",
+    xpath: "//div[@data-testid='photos-title']//a[contains(@class,'ipc-title-link-wrapper')]",
     role: "link",
-    accessibleNames: { ES: "Fotos", EN: "Photos" },
-    textContent: { ES: "Fotos", EN: "Photos" },
-    dataTestId: "hero-title-block__media-index",
-    cssSelector: "a[data-testid='hero-title-block__media-index']",
-    description: "Photos section link",
+    cssSelector: "[data-testid='photos-title'] a.ipc-title-link-wrapper",
+    description: "Photos section title link",
   },
   pageHeading: {
     xpath: "//h1[@data-testid='hero-title-block__title']",
@@ -26,11 +23,17 @@ export const TitleLocators = {
     cssSelector: "h1[data-testid='hero-title-block__title']",
     description: "Main title h1",
   },
-  ratingStarButton: {
-    xpath: "//div[@data-testid='rating-selector']//button",
+  ratingButton: {
+    xpath: "//div[@data-testid='hero-rating-bar__user-rating']//button",
     role: "button",
-    cssSelector: "div[data-testid='rating-selector'] button",
-    description: "Individual star button in rating widget — use locateOverriding with { xpathIndex: n } (1-based) or { cssIndex: n } (0-based)",
+    cssSelector: "div[data-testid='hero-rating-bar__user-rating'] button",
+    description: "Rate button that opens the star rating widget",
+  },
+  ratingStarButton: {
+    xpath: "//button[contains(@class,'ipc-starbar__rating__button')]",
+    role: "button",
+    cssSelector: "button.ipc-starbar__rating__button",
+    description: "Individual star button — use locateOverriding({ ariaLabel: 'Rate N' }) (1–10)",
   },
 } satisfies Record<string, Locator>;
 

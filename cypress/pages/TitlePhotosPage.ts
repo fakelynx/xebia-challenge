@@ -10,22 +10,27 @@ export class TitlePhotosPage extends BasePage<TitlePhotosLocatorMap> {
     return this;
   }
 
-  // Checks chip scroller first; falls back to dropdown option if not found there.
   selectFilterOption(optionName: string): this {
-    this.locate("chipScroller").then(($scroller) => {
-      const inScroller = $scroller.find(`:contains("${optionName}")`).length > 0;
-      if (inScroller) {
-        cy.wrap($scroller).contains(optionName).click();
+    this.locate("chipList").then(($chips) => {
+      const $match = $chips.filter((_i, el) =>
+        Cypress.$(el).text().trim().startsWith(optionName)
+      );
+      if ($match.length > 0) {
+        cy.wrap($match.first()).click();
       } else {
-        this.locate("filterDropdown").contains(optionName).click();
+        this.locate("filterDropdownSelect")
+          .find("option")
+          .filter((_i, el) => (el.textContent?.trim() ?? "").startsWith(optionName))
+          .then(($opt) => {
+            this.locate("filterDropdownSelect").select($opt.first().val() as string);
+          });
       }
     });
     return this;
   }
 
-  // 1-indexed position; asserts navigation to mediaviewer after click.
   clickPhotoByPosition(position: number): this {
-    this.locate("photoGrid").find("img").eq(position - 1).click();
+    this.locate("photoLink").eq(position - 1).click();
     cy.url().should("include", "/mediaviewer/");
     return this;
   }

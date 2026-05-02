@@ -2,6 +2,10 @@
 
 Automated test suite for the Xebia challenge. Covers UI end-to-end tests against [IMDb](https://www.imdb.com) and API tests, both running under the same Cypress configuration.
 
+## Disclaimer
+
+IMDb actively blocks automated browser traffic and bot requests. As a result, test runs against the live site will consistently fail — Cypress commands time out waiting for elements that never appear because the page returns an error, a CAPTCHA, or a bot-detection redirect instead of the expected content. The tests are structurally correct and the locator pipeline is sound; the failures are an environment constraint, not a code defect.
+
 ## Prerequisites
 
 - **Node.js 18.x** — required by the Cypress version and the `cross-env ELECTRON_RUN_AS_NODE` workaround in npm scripts

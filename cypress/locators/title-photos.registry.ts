@@ -2,33 +2,31 @@ import type { Locator } from "../types";
 
 export const TitlePhotosLocators = {
   filterButton: {
-    xpath: "//button[@data-testid='media-index-filter-toggle']",
+    xpath: "//button[@data-testid='image-chip-dropdown-test-id']",
     role: "button",
-    accessibleNames: { ES: "Filtrar", EN: "Filter" },
-    textContent: { ES: "Filtrar", EN: "Filter" },
-    dataTestId: "media-index-filter-toggle",
-    description: "Opens the filter panel",
+    accessibleNames: { ES: "Abrir aviso de filtro", EN: "Open filter prompt" },
+    dataTestId: "image-chip-dropdown-test-id",
+    cssSelector: "button[data-testid='image-chip-dropdown-test-id']",
+    description: "Opens the filter chip dropdown",
   },
-  chipScroller: {
-    xpath: "//div[@data-testid='media-index-filter-chip-list']",
-    role: "list",
-    accessibleNames: { ES: "Lista de filtros", EN: "Filter chip list" },
-    dataTestId: "media-index-filter-chip-list",
-    description: "Horizontal chip scroller for filter options",
+  chipList: {
+    xpath: "//button[starts-with(@data-testid,'filter-menu-chip')]",
+    role: "button",
+    cssSelector: "button[data-testid^='filter-menu-chip']",
+    description: "Selectable filter chip buttons (data-testid prefix: filter-menu-chip)",
   },
-  filterDropdown: {
-    xpath: "//ul[@data-testid='media-index-filter-dropdown']",
-    role: "listbox",
-    accessibleNames: { ES: "Menú de filtros", EN: "Filter dropdown" },
-    dataTestId: "media-index-filter-dropdown",
-    description: "Dropdown fallback for filter options",
+  filterDropdownSelect: {
+    xpath: "//select[@data-testid='select-dropdown-test-id']",
+    role: "combobox",
+    dataTestId: "select-dropdown-test-id",
+    cssSelector: "select[data-testid='select-dropdown-test-id']",
+    description: "Fallback select dropdown for filter options",
   },
-  photoGrid: {
-    xpath: "//div[@data-testid='media-index-grid']",
-    role: "grid",
-    accessibleNames: { ES: "Galería de fotos", EN: "Photo gallery" },
-    dataTestId: "media-index-grid",
-    description: "Photo grid container",
+  photoLink: {
+    xpath: "//a[starts-with(@data-testid,'mosaic-img')]",
+    role: "link",
+    cssSelector: "a[data-testid^='mosaic-img']",
+    description: "Photo grid link (data-testid prefix: mosaic-img)",
   },
 } satisfies Record<string, Locator>;
 

@@ -6,6 +6,7 @@ export const ActorLocators = {
     role: "region",
     accessibleNames: { ES: "Filmografía", EN: "Filmography" },
     dataTestId: "nm-flmg-sections",
+    cssSelector: "div[data-testid='nm-flmg-sections']",
     description: "Filmography accordion container",
   },
   accordionToggle: {
@@ -14,6 +15,7 @@ export const ActorLocators = {
     accessibleNames: { ES: "Ver sección", EN: "View section" },
     textContent: { ES: "Ver sección", EN: "View section" },
     dataTestId: "nm-flmg-accordion-header-button",
+    cssSelector: "button[data-testid='nm-flmg-accordion-header-button']",
     description: "Generic accordion section toggle",
   },
   accordionContent: {
@@ -21,7 +23,21 @@ export const ActorLocators = {
     role: "region",
     accessibleNames: { ES: "Contenido del acordeón", EN: "Accordion content" },
     dataTestId: "nm-flmg-accordion-item",
+    cssSelector: "div[data-testid='nm-flmg-accordion-item']",
     description: "Expanded accordion content panel",
+  },
+  upcomingAccordionToggle: {
+    xpath: "//label[starts-with(@data-testid,'accordion-item') and substring(@data-testid,string-length(@data-testid)-7)='-Upcoming']",
+    role: "button",
+    accessibleNames: { ES: "Expandir Próximamente", EN: "Expand Upcoming" },
+    cssSelector: "[data-testid^='accordion-item'][data-testid$='-Upcoming']",
+    description: "Upcoming filmography accordion toggle — dynamic data-testid matched by prefix/suffix",
+  },
+  unreleasedTitleElem: {
+    xpath: "//li[contains(@class,'ipc-metadata-list-summary-item')]",
+    role: "listitem",
+    cssSelector: "li.ipc-metadata-list-summary-item",
+    description: "Upcoming/unreleased title item in expanded filmography accordion",
   },
 } satisfies Record<string, Locator>;
 

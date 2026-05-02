@@ -10,6 +10,12 @@ export class TitlePage extends BasePage<TitleLocatorMap> {
     return this;
   }
 
+  rate(stars: number): this {
+    this.locate("ratingButton").click();
+    this.locateOverriding("ratingStarButton", { ariaLabel: `Rate ${stars}` }).click();
+    return this;
+  }
+
   navigateToPhotos(): this {
     this.locate("photosLink").click();
     cy.url().should("include", "mediaindex");

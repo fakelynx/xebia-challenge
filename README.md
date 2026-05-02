@@ -2,6 +2,10 @@
 
 Automated test suite for the Xebia challenge. Covers UI end-to-end tests against [IMDb](https://www.imdb.com) and API tests, both running under the same Cypress configuration.
 
+## Disclaimer
+
+IMDb actively blocks automated browser traffic and bot requests. As a result, test runs against the live site will consistently fail — Cypress commands time out waiting for elements that never appear because the page returns an error, a CAPTCHA, or a bot-detection redirect instead of the expected content. The tests are structurally correct and the locator pipeline is sound; the failures are an environment constraint, not a code defect.
+
 ## Prerequisites
 
 - **Node.js 18.x** — required by the Cypress version and the `cross-env ELECTRON_RUN_AS_NODE` workaround in npm scripts
@@ -55,32 +59,31 @@ cypress/
 
 ## Locator System
 
-Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor.registry.ts`) that exports a typed map of locators using `satisfies Record<string, Locator>`. POM methods call `this.locate(key)`, which runs up to five parallel strategies — `data-testid`, `aria-label`, `role+text`, XPath, and CSS selector — and uses the first match. No selectors are hardcoded in POM classes.
+Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor.registry.ts`) that exports a typed map of locators using `satisfies Record<string, Locator>`. Every registry entry requires a `cssSelector` field — all other fields are optional.
 
-When element identity depends on a runtime value, use `this.locateOverriding(key, overrides)`. The `LocateOverrides` object supports four independent fields: `ariaLabel` (substitutes into the aria-label strategy), `textContent` (substitutes into the role+text strategy), `xpathIndex` (selects the nth XPath match, disabling all other strategies), and `alias` (registers a Cypress alias via `.as()` for reuse within the test).
+POM methods call `this.locate(key)`, which runs a **two-strategy sequential pipeline**:
 
-## API Tests (Part 2)
+1. **CSS / data-testid** — if the locator has `dataTestId`, polls `[data-testid="..."]` for up to 1 second via `cy.get()`.
+2. **@testing-library/cypress** — if strategy 1 times out (or is skipped because there is no `dataTestId`), falls back to `cy.findByRole(role, { name })` or `cy.findByText(text)` with the full Cypress default timeout.
+3. **CSS-only** — when neither `dataTestId` nor testing-library fields (`accessibleNames`, `textContent`) are present, uses `cy.get(cssSelector)` directly with the full timeout.
 
-API specs live in `cypress/api/` and target the [PokéAPI](https://pokeapi.co/). They use `cy.request()` with absolute URLs and validate response shapes with **Zod schemas** — one `.parse()` call replaces per-field assertions and gives precise field-level error messages on failure.
+No selectors are hardcoded in POM classes.
 
-| Scenario | Endpoint |
-|----------|----------|
-| Valid berry by numeric id → 200 + shape check | `GET /api/v2/berry/{id}` |
-| Invalid berry id → 404 | `GET /api/v2/berry/{id}` |
-| Valid berry by name → 200 + shape check | `GET /api/v2/berry/{name}` |
-| Invalid berry name → 404 | `GET /api/v2/berry/{name}` |
-| Valid berry-flavor by name → 200 + shape check | `GET /api/v2/berry-flavor/{name}` |
-| Spicy berry with highest potency → cross-validate response | `GET /api/v2/berry-flavor/spicy` → `GET /api/v2/berry/{name}` |
+When element identity depends on a runtime value, use `this.locateOverriding(key, overrides)`. The `LocateOverrides` object supports five independent fields:
 
-Test data lives in `cypress/data/berry-api.csv`. The PokéAPI base URL is stored there — no `baseUrl` config change needed to run API tests.
+- `ariaLabel` — substitutes the testing-library `name` option at runtime
+- `textContent` — substitutes the testing-library text query at runtime
+- `xpathIndex` — 1-based positional: selects the nth CSS match via `:eq(n-1)`, disables testing-library
+- `cssIndex` — 0-based positional: selects the nth CSS match via `:eq(n)`, disables testing-library
+- `alias` — registers a Cypress alias via `.as()` for reuse within the test
 
 ## Tech Stack
 
-| Tool       | Version | Purpose                        |
-|------------|---------|--------------------------------|
-| Node.js    | 18.x    | Runtime                        |
-| TypeScript | latest  | Language                       |
-| Cypress    | 13.x    | Test runner                    |
-| Zod        | latest  | API response schema validation |
-| ESLint     | 8.x     | Linting                        |
-| Prettier   | 3.x     | Formatting                     |
+| Tool                     | Version | Purpose                       |
+|--------------------------|---------|-------------------------------|
+| Node.js                  | 18.x    | Runtime                       |
+| TypeScript               | latest  | Language                      |
+| Cypress                  | 13.x    | Test runner                   |
+| @testing-library/cypress | ^6.x    | Role- and text-based locators |
+| ESLint                   | 8.x     | Linting                       |
+| Prettier                 | 3.x     | Formatting                    |

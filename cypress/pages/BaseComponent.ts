@@ -1,30 +1,14 @@
 import type { Locator, Language } from "../types";
 
 const DEFAULT_LANGUAGE: Language = "EN";
-
-interface StrategyResult {
-  $els: JQuery<HTMLElement>;
-  strategy: string;
-}
-
-// ES2020-compatible Promise.any: resolves with first settled value, rejects if all reject.
-function promiseAny<T>(promises: Promise<T>[]): Promise<T> {
-  if (promises.length === 0) return Promise.reject(new Error("No strategies provided"));
-  return new Promise<T>((resolve, reject) => {
-    const errors: unknown[] = [];
-    for (const p of promises) {
-      p.then(resolve).catch((err) => {
-        errors.push(err);
-        if (errors.length === promises.length) reject(new Error("All strategies failed"));
-      });
-    }
-  });
-}
+const STRATEGY1_TIMEOUT = 1000;
+const POLL_INTERVAL = 50;
 
 export interface LocateOverrides {
   ariaLabel?: string;
   textContent?: string;
-  xpathIndex?: number;
+  xpathIndex?: number; // 1-based; maps to cssSelector:eq(n-1)
+  cssIndex?: number;   // 0-based; maps to cssSelector:eq(n)
   alias?: string;
 }
 
@@ -57,8 +41,19 @@ export abstract class BaseComponent<T extends Record<string, Locator>> {
 
     if (overrides.xpathIndex !== undefined) {
       overridden = {
-        xpath: `(${locator.xpath})[${overrides.xpathIndex}]`,
-        role: locator.role,
+        ...locator,
+        cssSelector: `${locator.cssSelector}:eq(${overrides.xpathIndex - 1})`,
+        accessibleNames: undefined,
+        textContent: undefined,
+        dataTestId: undefined,
+      };
+    } else if (overrides.cssIndex !== undefined) {
+      overridden = {
+        ...locator,
+        cssSelector: `${locator.cssSelector}:eq(${overrides.cssIndex})`,
+        accessibleNames: undefined,
+        textContent: undefined,
+        dataTestId: undefined,
       };
     } else {
       overridden = {
@@ -77,28 +72,115 @@ export abstract class BaseComponent<T extends Record<string, Locator>> {
   }
 
   private locateInner(key: string, locator: Locator): Cypress.Chainable<JQuery<HTMLElement>> {
-    const strategies = [
-      this.strategyByDataTestId(locator),
-      this.strategyByAriaLabel(locator),
-      this.strategyByRoleAndText(locator),
-      this.strategyByXPath(locator),
-      this.strategyByCss(locator),
-    ].filter((s): s is Promise<StrategyResult> => s !== null);
+    const ariaLabel = locator.accessibleNames?.[this.language];
+    const text = locator.textContent?.[this.language];
+    const hasTestingLib = !!(ariaLabel || text);
+    const hasTestId = !!locator.dataTestId;
 
-    if (strategies.length === 0) {
-      throw new Error(`[locate] No valid strategies for key "${key}"`);
+    // Strategy 1 + fallback to strategy 2
+    if (hasTestId && hasTestingLib) {
+      return this.tryTestIdThenTestingLib(key, locator, ariaLabel, text);
     }
 
-    return cy.wrap(
-      promiseAny(strategies).then(({ $els, strategy }) => {
+    // Strategy 1 only — data-testid with full Cypress retry
+    if (hasTestId) {
+      return cy
+        .get(`[data-testid="${locator.dataTestId}"]`, { log: false })
+        .then(($el) => {
+          Cypress.log({
+            name: "locate",
+            message: `${key} — data-testid (${$el.length})`,
+            consoleProps: () => ({ key, strategy: "data-testid", count: $el.length }),
+          });
+          return $el;
+        }) as Cypress.Chainable<JQuery<HTMLElement>>;
+    }
+
+    // Strategy 2 only — testing-library with full Cypress retry
+    if (hasTestingLib) {
+      return this.runTestingLib(key, locator, ariaLabel, text);
+    }
+
+    // CSS-only fallback — cy.get with full Cypress retry
+    return cy
+      .get(locator.cssSelector, { log: false })
+      .then(($el) => {
         Cypress.log({
           name: "locate",
-          message: `${key} — ${strategy} (${$els.length} element${$els.length !== 1 ? "s" : ""})`,
-          consoleProps: () => ({ key, strategy, count: $els.length }),
+          message: `${key} — css (${$el.length})`,
+          consoleProps: () => ({ key, strategy: "css", count: $el.length }),
         });
-        return $els;
-      })
-    ) as Cypress.Chainable<JQuery<HTMLElement>>;
+        return $el;
+      }) as Cypress.Chainable<JQuery<HTMLElement>>;
+  }
+
+  // Polls for the data-testid selector for STRATEGY1_TIMEOUT ms.
+  // If found → returns element; if timeout → falls back to testing-library.
+  private tryTestIdThenTestingLib(
+    key: string,
+    locator: Locator,
+    ariaLabel: string | undefined,
+    text: string | undefined
+  ): Cypress.Chainable<JQuery<HTMLElement>> {
+    const testIdSelector = `[data-testid="${locator.dataTestId}"]`;
+
+    const poll = new Cypress.Promise<JQuery<HTMLElement> | null>((resolve) => {
+      const start = Date.now();
+      const check = () => {
+        const $el = Cypress.$(testIdSelector);
+        if ($el.length > 0) return resolve($el);
+        if (Date.now() - start >= STRATEGY1_TIMEOUT) return resolve(null);
+        setTimeout(check, POLL_INTERVAL);
+      };
+      check();
+    });
+
+    return cy
+      .wrap(poll, { log: false })
+      .then(($elOrNull) => {
+        const $el = $elOrNull as JQuery<HTMLElement> | null;
+        if ($el) {
+          Cypress.log({
+            name: "locate",
+            message: `${key} — data-testid (${$el.length})`,
+            consoleProps: () => ({ key, strategy: "data-testid", count: $el.length }),
+          });
+          return cy.wrap($el, { log: false });
+        }
+        return this.runTestingLib(key, locator, ariaLabel, text);
+      }) as Cypress.Chainable<JQuery<HTMLElement>>;
+  }
+
+  // Delegates to @testing-library/cypress commands, which retry natively.
+  private runTestingLib(
+    key: string,
+    locator: Locator,
+    ariaLabel: string | undefined,
+    text: string | undefined
+  ): Cypress.Chainable<JQuery<HTMLElement>> {
+    if (ariaLabel) {
+      return cy
+        .findByRole(locator.role as Parameters<typeof cy.findByRole>[0], { name: ariaLabel })
+        .then(($el) => {
+          Cypress.log({
+            name: "locate",
+            message: `${key} — testing-library/role+name (${$el.length})`,
+            consoleProps: () => ({ key, strategy: "testing-library/role+name", count: $el.length }),
+          });
+          return $el;
+        }) as Cypress.Chainable<JQuery<HTMLElement>>;
+    }
+
+    return cy
+      .findByText(text!)
+      .then(($el) => {
+        Cypress.log({
+          name: "locate",
+          message: `${key} — testing-library/text (${$el.length})`,
+          consoleProps: () => ({ key, strategy: "testing-library/text", count: $el.length }),
+        });
+        return $el;
+      }) as Cypress.Chainable<JQuery<HTMLElement>>;
   }
 
   // Locates the iframe element, then scopes to its body for .within() usage.
@@ -107,71 +189,5 @@ export abstract class BaseComponent<T extends Record<string, Locator>> {
       .its("0.contentDocument.body")
       .should("not.be.empty")
       .then(cy.wrap) as Cypress.Chainable<JQuery<HTMLElement>>;
-  }
-
-  // Each strategy uses Cypress.$() (jQuery querying the AUT's DOM) for a synchronous check.
-  // All applicable strategies race via promiseAny; the first to find elements wins.
-  // The winning $els are returned directly — Cypress.$ elements are valid jQuery subjects.
-
-  private strategyByDataTestId(locator: Locator): Promise<StrategyResult> | null {
-    if (!locator.dataTestId) return null;
-    const $els = Cypress.$(`[data-testid="${locator.dataTestId}"]`) as JQuery<HTMLElement>;
-    return $els.length > 0
-      ? Promise.resolve({ $els, strategy: "data-testid" })
-      : Promise.reject(new Error("data-testid: no match"));
-  }
-
-  private strategyByAriaLabel(locator: Locator): Promise<StrategyResult> | null {
-    const name = locator.accessibleNames?.[this.language];
-    if (!name) return null;
-    const $els = Cypress.$(`[aria-label="${name}"]`) as JQuery<HTMLElement>;
-    return $els.length > 0
-      ? Promise.resolve({ $els, strategy: "aria-label" })
-      : Promise.reject(new Error("aria-label: no match"));
-  }
-
-  private strategyByRoleAndText(locator: Locator): Promise<StrategyResult> | null {
-    const text = locator.textContent?.[this.language];
-    if (!text || !locator.role) return null;
-    const $els = Cypress.$(`[role="${locator.role}"]:contains("${text}")`) as JQuery<HTMLElement>;
-    return $els.length > 0
-      ? Promise.resolve({ $els, strategy: "role+text" })
-      : Promise.reject(new Error("role+text: no match"));
-  }
-
-  // XPath is evaluated against the AUT's document via Cypress.$('html')[0].ownerDocument,
-  // since direct document.evaluate() would target the test runner frame, not the AUT.
-  private strategyByXPath(locator: Locator): Promise<StrategyResult> | null {
-    if (!locator.xpath) return null;
-    try {
-      const doc = Cypress.$("html")[0]?.ownerDocument;
-      if (!doc) return Promise.reject(new Error("xpath: AUT document not available"));
-      const result = doc.evaluate(
-        locator.xpath,
-        doc,
-        null,
-        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-        null
-      );
-      const nodes: Element[] = [];
-      for (let i = 0; i < result.snapshotLength; i++) {
-        const node = result.snapshotItem(i);
-        if (node) nodes.push(node as Element);
-      }
-      const $els = Cypress.$(nodes) as JQuery<HTMLElement>;
-      return $els.length > 0
-        ? Promise.resolve({ $els, strategy: "xpath" })
-        : Promise.reject(new Error("xpath: no match"));
-    } catch {
-      return Promise.reject(new Error("xpath: evaluation failed"));
-    }
-  }
-
-  private strategyByCss(locator: Locator): Promise<StrategyResult> | null {
-    if (!locator.cssSelector) return null;
-    const $els = Cypress.$(locator.cssSelector) as JQuery<HTMLElement>;
-    return $els.length > 0
-      ? Promise.resolve({ $els, strategy: "css" })
-      : Promise.reject(new Error("css: no match"));
   }
 }

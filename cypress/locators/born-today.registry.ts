@@ -1,61 +1,35 @@
 import type { Locator } from "../types";
 
 export const BornTodayLocators = {
-  filterChip: {
-    xpath: "//div[@data-testid='born-today-applied-chip']",
-    role: "group",
-    accessibleNames: { ES: "Filtro aplicado", EN: "Applied filter" },
-    dataTestId: "born-today-applied-chip",
-    description: "Applied filter chip",
+  filterChipList: {
+    xpath: "//div[@class='ipc-chip-list__scroller']",
+    role: "list",
+    cssSelector: "div.ipc-chip-list__scroller",
+    description: "Chip scroller containing active filter chips",
   },
-  filterChipRemove: {
-    xpath: "//button[@aria-label='Remove']",
+  birthDateStartInput: {
+    xpath: "//input[@data-testid='birthDate-start']",
+    role: "textbox",
+    accessibleNames: { ES: "Introduce la fecha de nacimiento desde", EN: "Enter birth from date" },
+    dataTestId: "birthDate-start",
+    cssSelector: "input[data-testid='birthDate-start']",
+    description: "Birth date range — start input",
+  },
+  birthDateEndInput: {
+    xpath: "//input[@data-testid='birthDate-end']",
+    role: "textbox",
+    accessibleNames: { ES: "Introduce la fecha de nacimiento hasta", EN: "Enter birth to date" },
+    dataTestId: "birthDate-end",
+    cssSelector: "input[data-testid='birthDate-end']",
+    description: "Birth date range — end input",
+  },
+  birthDateAccordion: {
+    xpath: "//label[@data-testid='accordion-item-birthDateAccordion']",
     role: "button",
-    accessibleNames: { ES: "Eliminar filtro", EN: "Remove filter" },
-    textContent: { ES: "Eliminar filtro", EN: "Remove filter" },
-    description: "Remove button on applied chip",
-  },
-  fromDayInput: {
-    xpath: "//input[@data-testid='born-today-from-day']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Día desde", EN: "From day" },
-    dataTestId: "born-today-from-day",
-    description: "From date day input",
-  },
-  fromMonthInput: {
-    xpath: "//input[@data-testid='born-today-from-month']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Mes desde", EN: "From month" },
-    dataTestId: "born-today-from-month",
-    description: "From date month input",
-  },
-  fromYearInput: {
-    xpath: "//input[@data-testid='born-today-from-year']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Año desde", EN: "From year" },
-    dataTestId: "born-today-from-year",
-    description: "From date year input",
-  },
-  toDayInput: {
-    xpath: "//input[@data-testid='born-today-to-day']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Día hasta", EN: "To day" },
-    dataTestId: "born-today-to-day",
-    description: "To date day input",
-  },
-  toMonthInput: {
-    xpath: "//input[@data-testid='born-today-to-month']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Mes hasta", EN: "To month" },
-    dataTestId: "born-today-to-month",
-    description: "To date month input",
-  },
-  toYearInput: {
-    xpath: "//input[@data-testid='born-today-to-year']",
-    role: "spinbutton",
-    accessibleNames: { ES: "Año hasta", EN: "To year" },
-    dataTestId: "born-today-to-year",
-    description: "To date year input",
+    accessibleNames: { ES: "Expand Fecha de nacimiento", EN: "Expand Birth date" },
+    dataTestId: "accordion-item-birthDateAccordion",
+    cssSelector: "[data-testid='accordion-item-birthDateAccordion']",
+    description: "Birth date filter accordion toggle",
   },
   applyButton: {
     xpath: "//button[@data-testid='born-today-apply']",
@@ -63,14 +37,14 @@ export const BornTodayLocators = {
     accessibleNames: { ES: "Aplicar", EN: "Apply" },
     textContent: { ES: "Aplicar", EN: "Apply" },
     dataTestId: "born-today-apply",
+    cssSelector: "button[data-testid='born-today-apply']",
     description: "Apply date filter button",
   },
   celebrityList: {
-    xpath: "//ul[@data-testid='born-today-results']",
-    role: "list",
-    accessibleNames: { ES: "Resultados", EN: "Results" },
-    dataTestId: "born-today-results",
-    description: "Celebrity results list",
+    xpath: "//li[contains(@class,'ipc-metadata-list-summary-item')]",
+    role: "listitem",
+    cssSelector: "li.ipc-metadata-list-summary-item",
+    description: "Individual celebrity result item",
   },
 } satisfies Record<string, Locator>;
 

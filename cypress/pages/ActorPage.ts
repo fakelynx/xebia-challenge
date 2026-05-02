@@ -6,8 +6,22 @@ export class ActorPage extends BasePage<ActorLocatorMap> {
   readonly pageTitle = "";
 
   clickAccordionItem(sectionName: string): this {
-    this.locateOverriding("accordionToggle", sectionName).as("toggle").click();
+    this.locateOverriding("accordionToggle", { ariaLabel: sectionName }).as("toggle").click();
     cy.get("@toggle").should("have.attr", "aria-expanded", "true");
+    return this;
+  }
+
+  clickAccordion(key: keyof ActorLocatorMap & string): this {
+    this.locate(key).click();
+    return this;
+  }
+
+  clickNthTaggedItem(key: keyof ActorLocatorMap & string, tag: string, nth: number): this {
+    this.locate(key)
+      .filter(`:contains("${tag}")`)
+      .eq(nth - 1)
+      .find("a")
+      .click();
     return this;
   }
 

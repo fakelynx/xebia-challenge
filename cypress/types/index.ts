@@ -6,7 +6,7 @@ export interface Locator {
   role: string;
   accessibleNames?: Record<Language, string>;
   textContent?: Record<Language, string>;
-  cssSelector?: string;
+  cssSelector: string;
   dataTestId?: string;
   description?: string;
   shadowDom?: boolean;

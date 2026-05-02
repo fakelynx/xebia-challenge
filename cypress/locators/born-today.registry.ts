@@ -6,6 +6,7 @@ export const BornTodayLocators = {
     role: "group",
     accessibleNames: { ES: "Filtro aplicado", EN: "Applied filter" },
     dataTestId: "born-today-applied-chip",
+    cssSelector: "div[data-testid='born-today-applied-chip']",
     description: "Applied filter chip",
   },
   filterChipRemove: {
@@ -13,6 +14,7 @@ export const BornTodayLocators = {
     role: "button",
     accessibleNames: { ES: "Eliminar filtro", EN: "Remove filter" },
     textContent: { ES: "Eliminar filtro", EN: "Remove filter" },
+    cssSelector: "button[aria-label='Remove']",
     description: "Remove button on applied chip",
   },
   fromDayInput: {
@@ -20,6 +22,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Día desde", EN: "From day" },
     dataTestId: "born-today-from-day",
+    cssSelector: "input[data-testid='born-today-from-day']",
     description: "From date day input",
   },
   fromMonthInput: {
@@ -27,6 +30,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Mes desde", EN: "From month" },
     dataTestId: "born-today-from-month",
+    cssSelector: "input[data-testid='born-today-from-month']",
     description: "From date month input",
   },
   fromYearInput: {
@@ -34,6 +38,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Año desde", EN: "From year" },
     dataTestId: "born-today-from-year",
+    cssSelector: "input[data-testid='born-today-from-year']",
     description: "From date year input",
   },
   toDayInput: {
@@ -41,6 +46,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Día hasta", EN: "To day" },
     dataTestId: "born-today-to-day",
+    cssSelector: "input[data-testid='born-today-to-day']",
     description: "To date day input",
   },
   toMonthInput: {
@@ -48,6 +54,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Mes hasta", EN: "To month" },
     dataTestId: "born-today-to-month",
+    cssSelector: "input[data-testid='born-today-to-month']",
     description: "To date month input",
   },
   toYearInput: {
@@ -55,6 +62,7 @@ export const BornTodayLocators = {
     role: "spinbutton",
     accessibleNames: { ES: "Año hasta", EN: "To year" },
     dataTestId: "born-today-to-year",
+    cssSelector: "input[data-testid='born-today-to-year']",
     description: "To date year input",
   },
   applyButton: {
@@ -63,6 +71,7 @@ export const BornTodayLocators = {
     accessibleNames: { ES: "Aplicar", EN: "Apply" },
     textContent: { ES: "Aplicar", EN: "Apply" },
     dataTestId: "born-today-apply",
+    cssSelector: "button[data-testid='born-today-apply']",
     description: "Apply date filter button",
   },
   celebrityList: {
@@ -70,6 +79,7 @@ export const BornTodayLocators = {
     role: "list",
     accessibleNames: { ES: "Resultados", EN: "Results" },
     dataTestId: "born-today-results",
+    cssSelector: "ul[data-testid='born-today-results']",
     description: "Celebrity results list",
   },
 } satisfies Record<string, Locator>;

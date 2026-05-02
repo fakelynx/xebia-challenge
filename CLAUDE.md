@@ -11,13 +11,14 @@ Both suites share the same `e2e` Cypress configuration block. No Component Testi
 
 ## Tech Stack
 
-| Tool       | Version | Purpose                |
-| ---------- | ------- | ---------------------- |
-| Node.js    | 18.x    | Runtime                |
-| TypeScript | latest  | Language               |
-| Cypress    | 13.x    | Test runner (UI + API) |
-| ESLint     | 8.x     | Linting                |
-| Prettier   | 3.x     | Formatting             |
+| Tool                        | Version | Purpose                        |
+| --------------------------- | ------- | ------------------------------ |
+| Node.js                     | 18.x    | Runtime                        |
+| TypeScript                  | latest  | Language                       |
+| Cypress                     | 13.x    | Test runner (UI + API)         |
+| @testing-library/cypress    | ^6.x    | Role- and text-based locators  |
+| ESLint                      | 8.x     | Linting                        |
+| Prettier                    | 3.x     | Formatting                     |
 
 ## Folder Structure
 
@@ -88,11 +89,11 @@ const Languages = ["ES", "EN"] as const;
 type Language = (typeof Languages)[number];
 
 interface Locator {
-  xpath: string;
+  xpath: string;           // kept for documentation — not used by locate()
   role: string;
-  accessibleNames?: Record<Language, string>; // ARIA computed name — used for aria-label strategy
-  textContent?: Record<Language, string>;      // Visible text inside the element — used for role+text strategy
-  cssSelector?: string;                        // CSS selector — used as last-resort strategy
+  accessibleNames?: Record<Language, string>; // ARIA computed name — used by testing-library strategy
+  textContent?: Record<Language, string>;      // Visible text inside the element — used by testing-library strategy
+  cssSelector: string;                         // required — primary CSS locate strategy
   dataTestId?: string;
   description?: string;
   shadowDom?: boolean;
@@ -102,7 +103,7 @@ interface Locator {
 type TestData = Record<string, string>;
 ```
 
-`accessibleNames` and `textContent` are kept separate because they describe different things: a button may have `aria-label="Close dialog"` with no visible text, or a link may display "Learn more" while its ARIA name is "Learn more about pricing".
+`cssSelector` is required on every registry entry. `xpath` is kept as documentation but is not used by the `locate()` pipeline. `accessibleNames` and `textContent` are kept separate because they describe different things: a button may have `aria-label="Close dialog"` with no visible text, or a link may display "Learn more" while its ARIA name is "Learn more about pricing".
 
 ---
 
@@ -120,6 +121,7 @@ export const LoginLocators = {
     role: "textbox",
     accessibleNames: { ES: "Usuario", EN: "Username" },
     dataTestId: "username-input",
+    cssSelector: "input[data-testid='username-input']",
     description: "Username field",
   },
   passwordInput: {
@@ -127,6 +129,7 @@ export const LoginLocators = {
     role: "textbox",
     accessibleNames: { ES: "Contraseña", EN: "Password" },
     dataTestId: "password-input",
+    cssSelector: "input[data-testid='password-input']",
     description: "Password field",
   },
   submitButton: {
@@ -134,6 +137,7 @@ export const LoginLocators = {
     role: "button",
     accessibleNames: { ES: "Iniciar sesión", EN: "Login" },
     textContent: { ES: "Iniciar sesión", EN: "Login" },
+    cssSelector: "button[type='submit']",
     description: "Submit button",
   },
 } satisfies Record<string, Locator>;
@@ -141,7 +145,7 @@ export const LoginLocators = {
 export type LoginLocatorMap = typeof LoginLocators;
 ```
 
-Populate only the fields that are available on the element. The more fields provided, the more strategies the `locate()` pipeline can try. Provide `dataTestId` whenever the element has a `data-testid` attribute — it is the most reliable strategy.
+`cssSelector` is required on every entry. Provide `dataTestId` whenever the element has a `data-testid` attribute — it gives the pipeline a short-timeout fast path before falling back to testing-library. The `cssSelector` is used as the primary strategy when neither `dataTestId` nor testing-library fields are available.
 
 ---
 
@@ -222,27 +226,49 @@ export class LoginPage extends BasePage<LoginLocatorMap> {
 }
 ```
 
-#### `locate(key)` — multi-strategy pipeline
+#### `locate(key)` — two-strategy sequential pipeline
 
-Defined in `BaseComponent`, `locate()` runs all applicable strategies against the AUT's DOM in parallel (via `promiseAny`) and uses the first one to find elements. The winning strategy is reported in the Cypress log.
+Defined in `BaseComponent`, `locate()` selects one of four code paths based on which fields the locator provides, then returns a `Cypress.Chainable<JQuery<HTMLElement>>`. The winning strategy is reported in the Cypress log.
 
-**Strategy priority** (first with available locator data wins):
+| Locator fields present | Strategy executed |
+|---|---|
+| `dataTestId` **and** `accessibleNames`/`textContent` | Strategy 1: poll `[data-testid]` for 1 s → on timeout fall back to strategy 2 |
+| `dataTestId` only | `cy.get('[data-testid="..."]')` with full Cypress timeout |
+| `accessibleNames`/`textContent` only | `cy.findByRole(role, { name })` or `cy.findByText(text)` via `@testing-library/cypress` |
+| `cssSelector` only | `cy.get(cssSelector)` with full Cypress timeout |
 
-| # | Strategy | Field used | Selector built |
-|---|----------|------------|----------------|
-| 1 | `data-testid` | `dataTestId` | `[data-testid="..."]` |
-| 2 | `aria-label` | `accessibleNames[language]` | `[aria-label="..."]` |
-| 3 | `role + text` | `role` + `textContent[language]` | `[role="..."]:contains("...")` |
-| 4 | XPath | `xpath` | evaluated via `document.evaluate()` against the AUT |
-| 5 | CSS selector | `cssSelector` | passed directly to `Cypress.$()` |
+**Strategy 1** uses a `Cypress.Promise` polling loop (50 ms ticks, 1 s cap) against `Cypress.$()`. If the element appears within 1 s, the test proceeds immediately. If not, **strategy 2** (`cy.findByRole` / `cy.findByText`) takes over with the remaining Cypress default timeout.
 
-All strategies use `Cypress.$()` (jQuery querying the AUT's DOM) for the synchronous DOM check. `locate()` returns a `Cypress.Chainable<JQuery<HTMLElement>>` — chain Cypress commands on it normally.
+Iframe support: if the locator has an `iframe` field, `locate()` pierces the iframe first and scopes all strategies to its body via `.within()`.
 
-**`locateOverriding(key, text)`** — same pipeline, but substitutes `text` into both `accessibleNames` and `textContent` for that call. Use when the element identity depends on a runtime string rather than a fixed registry value:
+**`locateOverriding(key, overrides)`** — same pipeline, but accepts a `LocateOverrides` object to customise how the element is located at runtime. All fields are optional and independent:
 
 ```typescript
-// Find the accordion toggle whose visible text is sectionName (e.g. "Actor", "Director")
-this.locateOverriding("accordionToggle", sectionName).click();
+interface LocateOverrides {
+  ariaLabel?: string;    // overrides accessibleNames[lang] → passed as { name } to findByRole
+  textContent?: string;  // overrides textContent[lang]     → passed to findByText
+  xpathIndex?: number;   // 1-based positional; maps to cssSelector:eq(n-1), disables testing-library
+  cssIndex?: number;     // 0-based positional; maps to cssSelector:eq(n),   disables testing-library
+  alias?: string;        // chains .as(alias) for later cy.get("@alias") reuse
+}
+```
+
+- **`ariaLabel`** / **`textContent`** — substitute a runtime string into the respective testing-library strategy. Both can be set independently on the same call.
+- **`xpathIndex`** — selects the nth DOM match of the registry `cssSelector`, 1-indexed (translates internally to `:eq(n-1)`). Testing-library strategy is disabled for that call.
+- **`cssIndex`** — same as `xpathIndex` but 0-indexed, maps directly to `:eq(n)`.
+- **`alias`** — chains `.as(alias)` at the end, making the element available as `cy.get("@alias")` throughout the test.
+
+```typescript
+// Override aria-label with a runtime value
+this.locateOverriding("accordionToggle", { ariaLabel: sectionName }).click();
+
+// Select the 7th star in a rating widget (positional, 1-based)
+this.locateOverriding("ratingStarButton", { xpathIndex: 7 }).click();
+
+// Locate once, alias for multi-step assertions
+this.locateOverriding("ratingStarButton", { xpathIndex: n, alias: "starBtn" });
+cy.get("@starBtn").should("be.visible");
+cy.get("@starBtn").click();
 ```
 
 #### Acceptable non-registry selectors in POM methods

@@ -6,6 +6,7 @@ export const TitleLocators = {
     role: "navigation",
     accessibleNames: { ES: "Navegación de secciones", EN: "Section navigation" },
     dataTestId: "TitlePage-navigation",
+    cssSelector: "nav[data-testid='TitlePage-navigation']",
     description: "Section tab navigation bar",
   },
   photosLink: {
@@ -14,6 +15,7 @@ export const TitleLocators = {
     accessibleNames: { ES: "Fotos", EN: "Photos" },
     textContent: { ES: "Fotos", EN: "Photos" },
     dataTestId: "hero-title-block__media-index",
+    cssSelector: "a[data-testid='hero-title-block__media-index']",
     description: "Photos section link",
   },
   pageHeading: {
@@ -21,6 +23,7 @@ export const TitleLocators = {
     role: "heading",
     accessibleNames: { ES: "Título", EN: "Title" },
     dataTestId: "hero-title-block__title",
+    cssSelector: "h1[data-testid='hero-title-block__title']",
     description: "Main title h1",
   },
 } satisfies Record<string, Locator>;

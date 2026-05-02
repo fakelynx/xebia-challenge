@@ -55,14 +55,31 @@ cypress/
 
 ## Locator System
 
-Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor.registry.ts`) that exports a typed map of locators using `satisfies Record<string, Locator>`. POM methods call `this.locate(key)`, which runs up to five parallel strategies — `data-testid`, `aria-label`, `role+text`, XPath, and CSS selector — and uses the first match. No selectors are hardcoded in POM classes.
+Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor.registry.ts`) that exports a typed map of locators using `satisfies Record<string, Locator>`. Every registry entry requires a `cssSelector` field — all other fields are optional.
+
+POM methods call `this.locate(key)`, which runs a **two-strategy sequential pipeline**:
+
+1. **CSS / data-testid** — if the locator has `dataTestId`, polls `[data-testid="..."]` for up to 1 second via `cy.get()`.
+2. **@testing-library/cypress** — if strategy 1 times out (or is skipped because there is no `dataTestId`), falls back to `cy.findByRole(role, { name })` or `cy.findByText(text)` with the full Cypress default timeout.
+3. **CSS-only** — when neither `dataTestId` nor testing-library fields (`accessibleNames`, `textContent`) are present, uses `cy.get(cssSelector)` directly with the full timeout.
+
+No selectors are hardcoded in POM classes.
+
+When element identity depends on a runtime value, use `this.locateOverriding(key, overrides)`. The `LocateOverrides` object supports five independent fields:
+
+- `ariaLabel` — substitutes the testing-library `name` option at runtime
+- `textContent` — substitutes the testing-library text query at runtime
+- `xpathIndex` — 1-based positional: selects the nth CSS match via `:eq(n-1)`, disables testing-library
+- `cssIndex` — 0-based positional: selects the nth CSS match via `:eq(n)`, disables testing-library
+- `alias` — registers a Cypress alias via `.as()` for reuse within the test
 
 ## Tech Stack
 
-| Tool       | Version | Purpose           |
-|------------|---------|-------------------|
-| Node.js    | 18.x    | Runtime           |
-| TypeScript | latest  | Language          |
-| Cypress    | 13.x    | Test runner       |
-| ESLint     | 8.x     | Linting           |
-| Prettier   | 3.x     | Formatting        |
+| Tool                     | Version | Purpose                       |
+|--------------------------|---------|-------------------------------|
+| Node.js                  | 18.x    | Runtime                       |
+| TypeScript               | latest  | Language                      |
+| Cypress                  | 13.x    | Test runner                   |
+| @testing-library/cypress | ^6.x    | Role- and text-based locators |
+| ESLint                   | 8.x     | Linting                       |
+| Prettier                 | 3.x     | Formatting                    |

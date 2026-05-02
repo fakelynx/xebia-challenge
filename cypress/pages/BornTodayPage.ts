@@ -9,7 +9,7 @@ export class BornTodayPage extends BasePage<BornTodayLocatorMap> {
     const removeLocator = this.locators.filterChipRemove;
     const removeName = removeLocator.accessibleNames?.[this.language] ?? "";
     const chip = chipLabel
-      ? this.locateOverriding("filterChip", chipLabel)
+      ? this.locateOverriding("filterChip", { textContent: chipLabel })
       : this.locate("filterChip").first();
     chip.contains(`[role="${removeLocator.role}"]`, removeName).click();
     return this;
@@ -28,6 +28,16 @@ export class BornTodayPage extends BasePage<BornTodayLocatorMap> {
     return this;
   }
 
+  removeFilterChips(): this {
+    this.locate("filterChipRemove").click();
+    return this;
+  }
+
+  unfoldAccordion(label: string): this {
+    this.locateOverriding("accordionToggle", { textContent: label }).click();
+    return this;
+  }
+
   // Calculates a past date offset from today and enters it in both from and to fields.
   enterRelativeDate(options: { years?: number; months?: number; days?: number }): this {
     const d = new Date();
@@ -40,9 +50,24 @@ export class BornTodayPage extends BasePage<BornTodayLocatorMap> {
   }
 
   // 1-indexed; asserts navigation to a /name/ page after click.
-  clickCelebrityByPosition(position: number): this {
-    this.locate("celebrityList").find("a[href*='/name/']").eq(position - 1).click();
-    cy.url().should("include", "/name/");
+  // Pass { soft: true } to skip rather than fail if fewer results are available.
+  clickCelebrityByPosition(
+    position: number,
+    options?: { soft?: boolean; onSuccess?: () => void }
+  ): this {
+    if (options?.soft) {
+      this.locate("celebrityList").then(($list) => {
+        const links = $list.find("a[href*='/name/']");
+        if (links.length >= position) {
+          cy.wrap(links.eq(position - 1)).click();
+          cy.url().should("include", "/name/");
+          options.onSuccess?.();
+        }
+      });
+    } else {
+      this.locate("celebrityList").find("a[href*='/name/']").eq(position - 1).click();
+      cy.url().should("include", "/name/");
+    }
     return this;
   }
 }

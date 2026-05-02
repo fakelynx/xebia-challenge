@@ -17,7 +17,7 @@ export abstract class ChartsPage extends BasePage<ChartsLocatorMap> {
 
   sortBy(optionLabel: string): this {
     this.locate("sortControl").click();
-    this.locateOverriding("sortOption", optionLabel).click();
+    this.locateOverriding("sortOption", { textContent: optionLabel }).click();
     return this;
   }
 }

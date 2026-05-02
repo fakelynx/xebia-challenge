@@ -26,6 +26,19 @@ export const ActorLocators = {
     cssSelector: "div[data-testid='nm-flmg-accordion-item']",
     description: "Expanded accordion content panel",
   },
+  upcomingAccordionToggle: {
+    xpath: "//button[@data-testid='nm-flmg-accordion-header-button'][.//span[contains(text(),'Upcoming')]]",
+    role: "button",
+    textContent: { ES: "Próximamente", EN: "Upcoming" },
+    cssSelector: "button[data-testid='nm-flmg-accordion-header-button']",
+    description: "Upcoming filmography accordion toggle — textContent distinguishes from other section toggles",
+  },
+  unreleasedTitleElem: {
+    xpath: "//li[contains(@class,'ipc-metadata-list-summary-item')]",
+    role: "listitem",
+    cssSelector: "li.ipc-metadata-list-summary-item",
+    description: "Upcoming/unreleased title item in expanded filmography accordion",
+  },
 } satisfies Record<string, Locator>;
 
 export type ActorLocatorMap = typeof ActorLocators;

@@ -26,6 +26,12 @@ export const TitleLocators = {
     cssSelector: "h1[data-testid='hero-title-block__title']",
     description: "Main title h1",
   },
+  ratingStarButton: {
+    xpath: "//div[@data-testid='rating-selector']//button",
+    role: "button",
+    cssSelector: "div[data-testid='rating-selector'] button",
+    description: "Individual star button in rating widget — use locateOverriding with { xpathIndex: n } (1-based) or { cssIndex: n } (0-based)",
+  },
 } satisfies Record<string, Locator>;
 
 export type TitleLocatorMap = typeof TitleLocators;

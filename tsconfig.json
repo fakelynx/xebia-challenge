@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node", "cypress", "@testing-library/cypress"]
+    "types": ["node", "cypress"]
   },
   "include": ["cypress.config.ts", "cypress/**/*.ts"],
   "exclude": ["node_modules"]

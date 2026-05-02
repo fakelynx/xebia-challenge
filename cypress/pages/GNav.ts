@@ -14,6 +14,11 @@ export class GNav extends BaseComponent<GNavLocatorMap> {
     return this.locate("navDrawer").contains("a", name) as unknown as Cypress.Chainable<JQuery<HTMLElement>>;
   }
 
+  clickHamburgerMenuItem(key: keyof GNavLocatorMap & string): this {
+    this.locate(key).click();
+    return this;
+  }
+
   search(query: string): this {
     this.locate("searchInput").click().clear().type(query);
     this.locate("searchSubmitButton").click();

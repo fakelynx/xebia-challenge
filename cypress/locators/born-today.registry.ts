@@ -82,6 +82,12 @@ export const BornTodayLocators = {
     cssSelector: "ul[data-testid='born-today-results']",
     description: "Celebrity results list",
   },
+  accordionToggle: {
+    xpath: "//button[contains(@class,'ipc-accordion__header')]",
+    role: "button",
+    cssSelector: "button.ipc-accordion__header",
+    description: "Filter section accordion toggle — textContent used to target a specific section (e.g. 'Birth Date')",
+  },
 } satisfies Record<string, Locator>;
 
 export type BornTodayLocatorMap = typeof BornTodayLocators;

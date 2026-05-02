@@ -32,6 +32,27 @@ export const GNavLocators = {
     cssSelector: "div[data-testid='imdb-nav-drawer']",
     description: "Sliding navigation drawer",
   },
+  movieCharts: {
+    xpath: "//a[contains(@href,'/chart/top/')][@role='menuitem']",
+    role: "menuitem",
+    accessibleNames: { ES: "IMDb Top 250 películas", EN: "Top 250 Movies" },
+    cssSelector: "a[href*='/chart/top/'][role='menuitem']",
+    description: "Top 250 Movies link in nav drawer",
+  },
+  tvCharts: {
+    xpath: "//a[contains(@href,'/chart/toptv')][@role='menuitem']",
+    role: "menuitem",
+    accessibleNames: { ES: "IMDb Top 250 series", EN: "Top 250 TV Shows" },
+    cssSelector: "a[href*='/chart/toptv'][role='menuitem']",
+    description: "Top 250 TV Shows link in nav drawer",
+  },
+  bornTodayList: {
+    xpath: "//a[contains(@href,'/feature/bornondate/')][@role='menuitem']",
+    role: "menuitem",
+    accessibleNames: { ES: "Nacidos hoy", EN: "Born Today" },
+    cssSelector: "a[href*='/feature/bornondate/'][role='menuitem']",
+    description: "Born Today link in nav drawer",
+  },
 } satisfies Record<string, Locator>;
 
 export type GNavLocatorMap = typeof GNavLocators;

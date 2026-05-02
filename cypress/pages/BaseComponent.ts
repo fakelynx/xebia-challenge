@@ -21,6 +21,13 @@ function promiseAny<T>(promises: Promise<T>[]): Promise<T> {
   });
 }
 
+export interface LocateOverrides {
+  ariaLabel?: string;
+  textContent?: string;
+  xpathIndex?: number;
+  alias?: string;
+}
+
 export abstract class BaseComponent<T extends Record<string, Locator>> {
   protected language: Language = DEFAULT_LANGUAGE;
 
@@ -41,14 +48,32 @@ export abstract class BaseComponent<T extends Record<string, Locator>> {
     return this.locateInner(key, locator);
   }
 
-  locateOverriding(key: keyof T & string, text: string): Cypress.Chainable<JQuery<HTMLElement>> {
+  locateOverriding(
+    key: keyof T & string,
+    overrides: LocateOverrides
+  ): Cypress.Chainable<JQuery<HTMLElement>> {
     const locator = this.locators[key];
-    const overridden: Locator = {
-      ...locator,
-      accessibleNames: { ES: text, EN: text },
-      textContent: { ES: text, EN: text },
-    };
-    return this.locateInner(key, overridden);
+    let overridden: Locator;
+
+    if (overrides.xpathIndex !== undefined) {
+      overridden = {
+        xpath: `(${locator.xpath})[${overrides.xpathIndex}]`,
+        role: locator.role,
+      };
+    } else {
+      overridden = {
+        ...locator,
+        ...(overrides.ariaLabel !== undefined && {
+          accessibleNames: { ES: overrides.ariaLabel, EN: overrides.ariaLabel },
+        }),
+        ...(overrides.textContent !== undefined && {
+          textContent: { ES: overrides.textContent, EN: overrides.textContent },
+        }),
+      };
+    }
+
+    const chain = this.locateInner(key, overridden);
+    return overrides.alias ? chain.as(overrides.alias) : chain;
   }
 
   private locateInner(key: string, locator: Locator): Cypress.Chainable<JQuery<HTMLElement>> {

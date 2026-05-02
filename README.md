@@ -57,6 +57,8 @@ cypress/
 
 Each page has a TypeScript registry file under `cypress/locators/` (e.g., `actor.registry.ts`) that exports a typed map of locators using `satisfies Record<string, Locator>`. POM methods call `this.locate(key)`, which runs up to five parallel strategies — `data-testid`, `aria-label`, `role+text`, XPath, and CSS selector — and uses the first match. No selectors are hardcoded in POM classes.
 
+When element identity depends on a runtime value, use `this.locateOverriding(key, overrides)`. The `LocateOverrides` object supports four independent fields: `ariaLabel` (substitutes into the aria-label strategy), `textContent` (substitutes into the role+text strategy), `xpathIndex` (selects the nth XPath match, disabling all other strategies), and `alias` (registers a Cypress alias via `.as()` for reuse within the test).
+
 ## Tech Stack
 
 | Tool       | Version | Purpose           |

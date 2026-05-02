@@ -238,11 +238,32 @@ Defined in `BaseComponent`, `locate()` runs all applicable strategies against th
 
 All strategies use `Cypress.$()` (jQuery querying the AUT's DOM) for the synchronous DOM check. `locate()` returns a `Cypress.Chainable<JQuery<HTMLElement>>` — chain Cypress commands on it normally.
 
-**`locateOverriding(key, text)`** — same pipeline, but substitutes `text` into both `accessibleNames` and `textContent` for that call. Use when the element identity depends on a runtime string rather than a fixed registry value:
+**`locateOverriding(key, overrides)`** — same pipeline, but accepts a `LocateOverrides` object to customise how the element is located at runtime. All fields are optional and independent:
 
 ```typescript
-// Find the accordion toggle whose visible text is sectionName (e.g. "Actor", "Director")
-this.locateOverriding("accordionToggle", sectionName).click();
+interface LocateOverrides {
+  ariaLabel?: string;    // overrides accessibleNames[lang] → aria-label strategy
+  textContent?: string;  // overrides textContent[lang]    → role+text strategy
+  xpathIndex?: number;   // wraps xpath as (xpath)[n], clears all other strategies
+  alias?: string;        // registers a Cypress alias via .as() for later re-use
+}
+```
+
+- **`ariaLabel`** / **`textContent`** — substitute a runtime string into the respective strategy. Both can be set independently on the same call.
+- **`xpathIndex`** — selects the nth DOM match of the registry XPath (1-indexed). All other strategies are disabled for that call so only xpath runs.
+- **`alias`** — chains `.as(alias)` at the end, making the element available as `cy.get("@alias")` throughout the test.
+
+```typescript
+// Override aria-label with a runtime value
+this.locateOverriding("accordionToggle", { ariaLabel: sectionName }).click();
+
+// Select the 7th star in a rating widget (xpath-only, positional)
+this.locateOverriding("ratingStarButton", { xpathIndex: 7 }).click();
+
+// Locate once, alias for multi-step assertions
+this.locateOverriding("ratingStarButton", { xpathIndex: n, alias: "starBtn" });
+cy.get("@starBtn").should("be.visible");
+cy.get("@starBtn").click();
 ```
 
 #### Acceptable non-registry selectors in POM methods
